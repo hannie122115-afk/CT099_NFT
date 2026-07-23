@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chợ NFT</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="marketplace.html" class="active">Chợ NFT</a>
+            <a href="my-nfts.html">NFT của tôi</a>
+            <a href="rentals.html">Thuê</a>
+            <a href="wallet.html">Ví</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <main>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <h2 style="font-size:18px;font-weight:600;">Chợ NFT</h2>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm NFT..." style="padding:5px 10px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:180px;">
+                    <select id="sortFilter" style="padding:5px 10px;border:1px solid var(--border-color);background:var(--bg-input);color:var(--text-primary);font-size:13px;">
+                        <option value="newest">Mới nhất</option>
+                        <option value="price-low">Giá thấp → cao</option>
+                        <option value="price-high">Giá cao → thấp</option>
+                    </select>
+                    <button onclick="loadMarketplace()" class="btn btn-outline btn-sm">Làm mới</button>
+                </div>
+            </div>
+
+            <div id="marketplaceList"></div>
+        </main>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user) window.location.href = 'login.html';
+
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
+        let allNFTs = [];
+
+        async function loadWalletBalance() {
+            try {
+                const res = await fetch(`http://localhost:5000/api/wallet/${user.ten_nguoi_dung}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('walletBalance').textContent = data.wallet.so_du || 0;
+                }
+            } catch (e) {}
+        }
+
+        async function loadMarketplace() {
+            try {
+                const res = await fetch('http://localhost:5000/api/nfts/available', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    allNFTs = data.nfts || [];
+                    renderNFTs(allNFTs);
+                } else {
+                    document.getElementById('marketplaceList').innerHTML = `<div class="msg msg-error">Không thể tải danh sách NFT</div>`;
+                }
+            } catch (error) {
+                document.getElementById('marketplaceList').innerHTML = `<div class="msg msg-error">Lỗi kết nối máy chủ</div>`;
+            }
+        }
+
+        function renderNFTs(nfts) {
+            let html = '<div class="card-grid">';
+            if (nfts.length === 0) {
+                html += `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:30px 0;">Chưa có NFT nào</p>`;
+            } else {
+                for (const nft of nfts) {
+                    const statusMap = {
+                        'co_san': 'Có sẵn',
+                        'dang_thue': 'Đang thuê',
+                        'tam_ngung': 'Tạm ngưng'
+                    };
+                    const statusClass = {
+                        'co_san': 'badge-success',
+                        'dang_thue': 'badge-warning',
+                        'tam_ngung': 'badge-danger'
+                    };
+                    const ownerName = nft.ten_chu_so_huu || nft.dia_chi_chu_so_huu.slice(0, 12) + '...';
+                    const canRent = nft.trang_thai === 'co_san' && nft.dia_chi_chu_so_huu !== user.dia_chi_vi;
+
+                    html += `
+                        <div class="nft-item">
+                            <div style="height:100px;background:var(--bg-input);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;margin-bottom:10px;">
+                                ${nft.ten}
+                            </div>
+                            <div class="nft-name">${nft.ten}</div>
+                            <div class="nft-desc">${nft.mo_ta || 'Không có mô tả'}</div>
+                            <div class="nft-meta">
+                                <span><span class="nft-price">${nft.gia_thue}</span> COINS/ngày</span>
+                                <span><span class="badge ${statusClass[nft.trang_thai] || 'badge'}">${statusMap[nft.trang_thai] || nft.trang_thai}</span></span>
+                            </div>
+                            <div style="font-size:12px;color:var(--text-muted);margin:4px 0;">Chủ sở hữu: ${ownerName}</div>
+                            <div style="font-size:12px;color:var(--text-muted);">Lượt thuê: ${nft.so_lan_thue || 0}</div>
+                            <div class="nft-actions">
+                                ${canRent ? `
+                                    <a href="rental-detail.html?nft_id=${nft.ma_nft}" class="btn btn-primary btn-sm">Thuê</a>
+                                ` : `
+                                    <span class="badge badge-warning">Đã có người thuê</span>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            html += '</div>';
+            document.getElementById('marketplaceList').innerHTML = html;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const keyword = this.value.toLowerCase().trim();
+            const filtered = allNFTs.filter(n => 
+                (n.ten || '').toLowerCase().includes(keyword) ||
+                (n.mo_ta || '').toLowerCase().includes(keyword)
+            );
+            renderNFTs(filtered);
+        });
+
+        document.getElementById('sortFilter').addEventListener('change', function() {
+            const sort = this.value;
+            let sorted = [...allNFTs];
+            if (sort === 'price-low') {
+                sorted.sort((a, b) => (a.gia_thue || 0) - (b.gia_thue || 0));
+            } else if (sort === 'price-high') {
+                sorted.sort((a, b) => (b.gia_thue || 0) - (a.gia_thue || 0));
+            } else {
+                sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
+            renderNFTs(sorted);
+        });
+
+        loadWalletBalance();
+        loadMarketplace();
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

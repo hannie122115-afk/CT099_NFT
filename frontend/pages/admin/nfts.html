@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý NFT</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quản lý NFT</h1>
+            <nav>
+                <a href="dashboard.html">Tổng quan</a>
+                <a href="users.html">Người dùng</a>
+                <a href="games.html">Trò chơi</a>
+                <a href="characters.html">Nhân vật</a>
+                <a href="items.html">Vật phẩm</a>
+                <a href="nfts.html" class="active">NFT</a>
+                <a href="rentals.html">Hợp đồng</a>
+                <a href="transactions.html">Giao dịch</a>
+                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+            </nav>
+        </header>
+
+        <main>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <h2 style="font-size:20px;font-weight:600;">Danh sách NFT</h2>
+                <button onclick="showCreateForm()" class="btn btn-primary">Tạo NFT mới</button>
+            </div>
+
+            <div id="createForm" style="display:none;background:#fff;border:1px solid #e2e8f0;padding:20px;margin-bottom:20px;border-radius:4px;">
+                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Tạo NFT mới</h3>
+                <form id="createFormSubmit">
+                    <div class="form-group">
+                        <label>Tên NFT</label>
+                        <input type="text" id="nftName" placeholder="Nhập tên NFT" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả</label>
+                        <textarea id="nftDesc" placeholder="Nhập mô tả NFT"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Giá thuê (COINS/ngày)</label>
+                        <input type="number" id="nftPrice" value="10" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vật phẩm</label>
+                        <select id="nftItem" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Chủ sở hữu</label>
+                        <select id="nftOwner" required></select>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="submit" class="btn btn-primary">Tạo NFT</button>
+                        <button type="button" onclick="hideCreateForm()" class="btn btn-outline">Hủy</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="nftList"></div>
+        </main>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user || user.vai_tro !== 'quan_tri') {
+            window.location.href = '../login.html';
+        }
+
+        function showCreateForm() {
+            document.getElementById('createForm').style.display = 'block';
+            loadItemSelect();
+            loadUserSelect();
+        }
+
+        function hideCreateForm() {
+            document.getElementById('createForm').style.display = 'none';
+            document.getElementById('createFormSubmit').reset();
+        }
+
+        async function loadItemSelect() {
+            try {
+                const res = await fetch('http://localhost:5000/api/items/all');
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('nftItem');
+                    select.innerHTML = '<option value="">Chọn vật phẩm</option>';
+                    data.items.forEach(item => {
+                        select.innerHTML += `<option value="${item.ma_vat_pham}">${item.ten_vat_pham}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi tải vật phẩm:', error);
+            }
+        }
+
+        async function loadUserSelect() {
+            try {
+                const res = await fetch('http://localhost:5000/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('nftOwner');
+                    select.innerHTML = '<option value="">Chọn chủ sở hữu</option>';
+                    data.users.forEach(u => {
+                        select.innerHTML += `<option value="${u.ma_nguoi_dung}">${u.ten_nguoi_dung}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi tải người dùng:', error);
+            }
+        }
+
+        document.getElementById('createFormSubmit').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('nftName').value.trim();
+            const desc = document.getElementById('nftDesc').value.trim();
+            const price = parseInt(document.getElementById('nftPrice').value);
+            const itemId = document.getElementById('nftItem').value;
+            const ownerId = document.getElementById('nftOwner').value;
+
+            if (!name || !itemId || !ownerId) {
+                alert('Vui lòng điền đầy đủ thông tin');
+                return;
+            }
+
+            // Lấy địa chỉ ví của chủ sở hữu
+            let ownerAddress = '';
+            try {
+                const usersRes = await fetch('http://localhost:5000/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const usersData = await usersRes.json();
+                if (usersData.success) {
+                    const owner = usersData.users.find(u => u.ma_nguoi_dung === ownerId);
+                    if (owner) {
+                        ownerAddress = owner.dia_chi_vi;
+                    }
+                }
+            } catch (error) {
+                console.error('Lỗi tải thông tin chủ sở hữu:', error);
+            }
+
+            if (!ownerAddress) {
+                alert('Chủ sở hữu chưa có ví. Vui lòng tạo ví trước.');
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:5000/api/nfts/mint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ten: name,
+                        mo_ta: desc,
+                        dia_chi_chu_so_huu: ownerAddress,
+                        gia_thue: price,
+                        ma_vat_pham: itemId
+                    })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Tạo NFT thành công');
+                    hideCreateForm();
+                    loadNFTs();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        });
+
+        async function loadNFTs() {
+            try {
+                const res = await fetch('http://localhost:5000/api/nfts', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    let html = `
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Tên NFT</th>
+                                        <th>Giá thuê</th>
+                                        <th>Chủ sở hữu</th>
+                                        <th>Trạng thái</th>
+                                        <th>Lượt thuê</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    if (data.nfts.length === 0) {
+                        html += `<tr><td colspan="8" style="text-align:center;color:#718096;">Chưa có NFT nào</td></tr>`;
+                    } else {
+                        data.nfts.forEach((nft, index) => {
+                            const statusMap = {
+                                'co_san': 'Có sẵn',
+                                'dang_thue': 'Đang thuê',
+                                'tam_ngung': 'Tạm ngưng'
+                            };
+                            const statusClass = {
+                                'co_san': 'badge-success',
+                                'dang_thue': 'badge-warning',
+                                'tam_ngung': 'badge-danger'
+                            };
+                            html += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td><strong>${nft.ten}</strong></td>
+                                    <td>${nft.gia_thue} COINS</td>
+                                    <td style="font-family:monospace;font-size:12px;">${nft.dia_chi_chu_so_huu.slice(0, 12)}...</td>
+                                    <td><span class="badge ${statusClass[nft.trang_thai] || 'badge'}">${statusMap[nft.trang_thai] || nft.trang_thai}</span></td>
+                                    <td>${nft.so_lan_thue || 0}</td>
+                                    <td>${new Date(nft.created_at).toLocaleDateString('vi-VN')}</td>
+                                    <td>
+                                        <button onclick="toggleNFTStatus('${nft.ma_nft}')" class="btn btn-sm btn-outline">Đổi trạng thái</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += '</tbody></table></div>';
+                    document.getElementById('nftList').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('nftList').innerHTML = `
+                    <div class="message message-error">Lỗi tải danh sách NFT</div>
+                `;
+            }
+        }
+
+        async function toggleNFTStatus(maNft) {
+            const statuses = ['co_san', 'dang_thue', 'tam_ngung'];
+            const statusMap = {
+                'co_san': 'Có sẵn',
+                'dang_thue': 'Đang thuê',
+                'tam_ngung': 'Tạm ngưng'
+            };
+
+            const current = await fetch(`http://localhost:5000/api/nfts/${maNft}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await current.json();
+            if (!data.success) {
+                alert('Lỗi tải thông tin NFT');
+                return;
+            }
+
+            const currentStatus = data.nft.trang_thai;
+            const currentIndex = statuses.indexOf(currentStatus);
+            const nextIndex = (currentIndex + 1) % statuses.length;
+            const nextStatus = statuses[nextIndex];
+
+            if (!confirm(`Đổi trạng thái từ "${statusMap[currentStatus]}" sang "${statusMap[nextStatus]}"?`)) return;
+
+            try {
+                const res = await fetch(`http://localhost:5000/api/nfts/${maNft}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ trang_thai: nextStatus })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Đổi trạng thái thành công');
+                    loadNFTs();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        }
+
+        loadNFTs();
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Đăng nhập</h1>
+            <nav>
+                <a href="../index.html">Trang chủ</a>
+                <a href="register.html">Đăng ký</a>
+            </nav>
+        </header>
+
+        <main style="max-width:420px;margin:0 auto;">
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:32px 36px;">
+                <h2 style="font-size:22px;margin-bottom:6px;color:#1a1a2e;">Chào mừng trở lại</h2>
+                <p style="color:#718096;font-size:14px;margin-bottom:24px;">Đăng nhập để tiếp tục</p>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Tên đăng nhập</label>
+                        <input type="text" id="username" placeholder="Nhập tên đăng nhập" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mật khẩu</label>
+                        <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Đăng nhập</button>
+                </form>
+
+                <div id="message" class="message" style="display:none;"></div>
+
+                <p style="margin-top:18px;text-align:center;font-size:14px;color:#718096;">
+                    Chưa có tài khoản? <a href="register.html">Đăng ký ngay</a>
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('message');
+
+            if (!username || !password) {
+                msg.style.display = 'block';
+                msg.className = 'message message-error';
+                msg.textContent = 'Vui lòng nhập tên đăng nhập và mật khẩu';
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ten_nguoi_dung: username, mat_khau: password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    msg.style.display = 'block';
+                    msg.className = 'message message-success';
+                    msg.textContent = 'Đăng nhập thành công. Đang chuyển hướng...';
+                    setTimeout(() => {
+                        if (data.user.vai_tro === 'quan_tri') {
+                            window.location.href = 'admin/dashboard.html';
+                        } else {
+                            window.location.href = 'dashboard.html';
+                        }
+                    }, 800);
+                } else {
+                    msg.style.display = 'block';
+                    msg.className = 'message message-error';
+                    msg.textContent = data.message || 'Đăng nhập thất bại';
+                }
+            } catch (error) {
+                msg.style.display = 'block';
+                msg.className = 'message message-error';
+                msg.textContent = 'Lỗi kết nối đến máy chủ';
+            }
+        });
+    </script>
+</body>
+</html>

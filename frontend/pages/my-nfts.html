@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFT của tôi</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="marketplace.html">Chợ NFT</a>
+            <a href="my-nfts.html" class="active">NFT của tôi</a>
+            <a href="rentals.html">Thuê</a>
+            <a href="wallet.html">Ví</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <main>
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:14px;">NFT của tôi</h2>
+            <div id="myNFTList"></div>
+        </main>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user) window.location.href = 'login.html';
+
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
+        async function loadWalletBalance() {
+            try {
+                const res = await fetch(`http://localhost:5000/api/wallet/${user.ten_nguoi_dung}`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('walletBalance').textContent = data.wallet.so_du || 0;
+                }
+            } catch (e) {}
+        }
+
+        async function loadMyNFTs() {
+            try {
+                const res = await fetch(`http://localhost:5000/api/nfts/owner/${user.dia_chi_vi}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    let html = '<div class="card-grid">';
+                    if (data.nfts.length === 0) {
+                        html += `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:30px 0;">Bạn chưa có NFT nào</p>`;
+                    } else {
+                        for (const nft of data.nfts) {
+                            const statusMap = {
+                                'co_san': 'Có sẵn',
+                                'dang_thue': 'Đang thuê',
+                                'tam_ngung': 'Tạm ngưng'
+                            };
+                            const statusClass = {
+                                'co_san': 'badge-success',
+                                'dang_thue': 'badge-warning',
+                                'tam_ngung': 'badge-danger'
+                            };
+                            const ownerName = nft.dia_chi_chu_so_huu === user.dia_chi_vi ? 'Bạn' : (nft.ten_chu_so_huu || 'Không rõ');
+
+                            html += `
+                                <div class="nft-item">
+                                    <div style="height:80px;background:var(--bg-input);border:1px solid var(--border-color);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;margin-bottom:8px;">
+                                        ${nft.ten}
+                                    </div>
+                                    <div class="nft-name">${nft.ten}</div>
+                                    <div class="nft-desc">${nft.mo_ta || 'Không có mô tả'}</div>
+                                    <div class="nft-meta">
+                                        <span><span class="nft-price">${nft.gia_thue}</span> COINS/ngày</span>
+                                        <span><span class="badge ${statusClass[nft.trang_thai] || 'badge'}">${statusMap[nft.trang_thai] || nft.trang_thai}</span></span>
+                                    </div>
+                                    <div style="font-size:12px;color:var(--text-muted);margin:4px 0;">Chủ sở hữu: ${ownerName}</div>
+                                    <div style="font-size:12px;color:var(--text-muted);">Thu nhập: ${nft.tong_thu_nhap || 0} COINS</div>
+                                    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                                        ${nft.trang_thai === 'co_san' ? `
+                                            <button onclick="listForRent('${nft.ma_nft}')" class="btn btn-success btn-sm">Cho thuê</button>
+                                        ` : nft.trang_thai === 'dang_thue' ? `
+                                            <span class="badge badge-warning">Đang thuê</span>
+                                        ` : ``}
+                                        ${nft.trang_thai !== 'dang_thue' ? `
+                                            <button onclick="toggleStatus('${nft.ma_nft}')" class="btn btn-outline btn-sm">
+                                                ${nft.trang_thai === 'tam_ngung' ? 'Bật' : 'Tạm ngưng'}
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                    html += '</div>';
+                    document.getElementById('myNFTList').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('myNFTList').innerHTML = `<div class="msg msg-error">Lỗi tải danh sách NFT</div>`;
+            }
+        }
+
+        async function toggleStatus(maNft) {
+            try {
+                const res = await fetch(`http://localhost:5000/api/nfts/${maNft}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (!data.success) { alert('Lỗi tải NFT'); return; }
+
+                const current = data.nft.trang_thai;
+                if (current === 'dang_thue') {
+                    alert('NFT đang được thuê, không thể thay đổi');
+                    return;
+                }
+                const newStatus = current === 'tam_ngung' ? 'co_san' : 'tam_ngung';
+                if (!confirm(`Đổi trạng thái?`)) return;
+
+                const updateRes = await fetch(`http://localhost:5000/api/nfts/${maNft}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ trang_thai: newStatus })
+                });
+                const result = await updateRes.json();
+                if (result.success) {
+                    alert('Đổi trạng thái thành công');
+                    loadMyNFTs();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        }
+
+        async function listForRent(maNft) {
+            const price = prompt('Nhập giá thuê (COINS/ngày):');
+            if (!price) return;
+            const gia = parseInt(price);
+            if (gia <= 0) { alert('Giá không hợp lệ'); return; }
+
+            try {
+                const res = await fetch(`http://localhost:5000/api/nfts/${maNft}/list-for-rent`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ gia_thue: gia })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadMyNFTs();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        }
+
+        loadWalletBalance();
+        loadMyNFTs();
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý vật phẩm</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quản lý vật phẩm</h1>
+            <nav>
+                <a href="dashboard.html">Tổng quan</a>
+                <a href="users.html">Người dùng</a>
+                <a href="games.html">Trò chơi</a>
+                <a href="characters.html">Nhân vật</a>
+                <a href="items.html" class="active">Vật phẩm</a>
+                <a href="nfts.html">NFT</a>
+                <a href="rentals.html">Hợp đồng</a>
+                <a href="transactions.html">Giao dịch</a>
+                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+            </nav>
+        </header>
+
+        <main>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <h2 style="font-size:20px;font-weight:600;">Danh sách vật phẩm</h2>
+                <button onclick="showCreateForm()" class="btn btn-primary">Thêm vật phẩm mới</button>
+            </div>
+
+            <div id="createForm" style="display:none;background:#fff;border:1px solid #e2e8f0;padding:20px;margin-bottom:20px;border-radius:4px;">
+                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Thêm vật phẩm mới</h3>
+                <form id="createFormSubmit">
+                    <div class="form-group">
+                        <label>Tên vật phẩm</label>
+                        <input type="text" id="itemName" placeholder="Nhập tên vật phẩm" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả</label>
+                        <textarea id="itemDesc" placeholder="Nhập mô tả vật phẩm"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Loại</label>
+                        <select id="itemType">
+                            <option value="vu_khi">Vũ khí</option>
+                            <option value="ao_giap">Áo giáp</option>
+                            <option value="ky_nang">Kỹ năng</option>
+                            <option value="phu_kien">Phụ kiện</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Giá thuê (COINS/ngày)</label>
+                        <input type="number" id="itemPrice" value="10" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tiền cọc (COINS)</label>
+                        <input type="number" id="itemDeposit" value="50" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Thời gian thuê tối đa (ngày)</label>
+                        <input type="number" id="itemMaxDays" value="30" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Độ hiếm</label>
+                        <select id="itemRarity">
+                            <option value="thuong">Thường</option>
+                            <option value="hiem">Hiếm</option>
+                            <option value="sieu_hiem">Siêu hiếm</option>
+                            <option value="huyen_thoai">Huyền thoại</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Trò chơi</label>
+                        <select id="itemGame" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Dùng cho nhân vật</label>
+                        <select id="itemCharacter">
+                            <option value="">Tất cả nhân vật</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" onclick="hideCreateForm()" class="btn btn-outline">Hủy</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="itemList"></div>
+        </main>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user || user.vai_tro !== 'quan_tri') {
+            window.location.href = '../login.html';
+        }
+
+        let games = [];
+        let characters = {};
+
+        function showCreateForm() {
+            document.getElementById('createForm').style.display = 'block';
+            loadGameSelect();
+        }
+
+        function hideCreateForm() {
+            document.getElementById('createForm').style.display = 'none';
+            document.getElementById('createFormSubmit').reset();
+        }
+
+        async function loadGameSelect() {
+            try {
+                const res = await fetch('http://localhost:5000/api/games');
+                const data = await res.json();
+                if (data.success) {
+                    games = data.games;
+                    const select = document.getElementById('itemGame');
+                    select.innerHTML = '<option value="">Chọn trò chơi</option>';
+                    games.forEach(g => {
+                        select.innerHTML += `<option value="${g.ma_game}">${g.ten_game}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi tải game:', error);
+            }
+        }
+
+        document.getElementById('itemGame').addEventListener('change', async function() {
+            const gameId = this.value;
+            const charSelect = document.getElementById('itemCharacter');
+            charSelect.innerHTML = '<option value="">Tất cả nhân vật</option>';
+            if (gameId) {
+                try {
+                    const res = await fetch(`http://localhost:5000/api/games/${gameId}/characters`);
+                    const data = await res.json();
+                    if (data.success) {
+                        data.characters.forEach(c => {
+                            charSelect.innerHTML += `<option value="${c.ma_nhan_vat}">${c.ten_nhan_vat}</option>`;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Lỗi tải nhân vật:', error);
+                }
+            }
+        });
+
+        document.getElementById('createFormSubmit').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const data = {
+                ten_vat_pham: document.getElementById('itemName').value.trim(),
+                mo_ta: document.getElementById('itemDesc').value.trim(),
+                loai: document.getElementById('itemType').value,
+                gia_thue: parseInt(document.getElementById('itemPrice').value),
+                tien_dat_coc: parseInt(document.getElementById('itemDeposit').value) || 0,
+                thoi_gian_thue_toi_da: parseInt(document.getElementById('itemMaxDays').value),
+                do_hiem: document.getElementById('itemRarity').value,
+                ma_game: document.getElementById('itemGame').value,
+                duoc_dung_cho: document.getElementById('itemCharacter').value || null
+            };
+
+            if (!data.ten_vat_pham || !data.ma_game) {
+                alert('Vui lòng nhập tên vật phẩm và chọn trò chơi');
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:5000/api/items', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert('Thêm vật phẩm thành công');
+                    hideCreateForm();
+                    loadItems();
+                } else {
+                    alert('Lỗi: ' + result.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        });
+
+        async function loadItems() {
+            try {
+                // Lấy tất cả game
+                const gamesRes = await fetch('http://localhost:5000/api/games');
+                const gamesData = await gamesRes.json();
+                const gameMap = {};
+                if (gamesData.success) {
+                    gamesData.games.forEach(g => { gameMap[g.ma_game] = g.ten_game; });
+                }
+
+                // Lấy tất cả vật phẩm từ tất cả game
+                let allItems = [];
+                if (gamesData.success) {
+                    for (const game of gamesData.games) {
+                        const res = await fetch(`http://localhost:5000/api/games/${game.ma_game}/items`);
+                        const data = await res.json();
+                        if (data.success) {
+                            data.items.forEach(item => {
+                                allItems.push({
+                                    ...item,
+                                    ten_game: game.ten_game
+                                });
+                            });
+                        }
+                    }
+                }
+
+                let html = `
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên vật phẩm</th>
+                                    <th>Loại</th>
+                                    <th>Giá thuê</th>
+                                    <th>Trò chơi</th>
+                                    <th>Trạng thái</th>
+                                    <th>NFT</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                if (allItems.length === 0) {
+                    html += `<tr><td colspan="8" style="text-align:center;color:#718096;">Chưa có vật phẩm nào</td></tr>`;
+                } else {
+                    allItems.forEach((item, index) => {
+                        const statusText = item.trang_thai_thue === 'con_trong' ? 'Có sẵn' : 'Đang thuê';
+                        const statusClass = item.trang_thai_thue === 'con_trong' ? 'badge-success' : 'badge-warning';
+                        const hasNft = item.has_nft ? 'Có' : 'Chưa có';
+                        html += `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td><strong>${item.ten_vat_pham}</strong></td>
+                                <td>${item.loai || 'Không rõ'}</td>
+                                <td>${item.gia_thue} COINS</td>
+                                <td>${item.ten_game}</td>
+                                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                                <td><span class="badge ${item.has_nft ? 'badge-success' : 'badge'}">${hasNft}</span></td>
+                                <td>
+                                    <button onclick="deleteItem('${item.ma_vat_pham}')" class="btn btn-danger btn-sm">Xóa</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                html += '</tbody></table></div>';
+                document.getElementById('itemList').innerHTML = html;
+            } catch (error) {
+                document.getElementById('itemList').innerHTML = `
+                    <div class="message message-error">Lỗi tải danh sách vật phẩm</div>
+                `;
+            }
+        }
+
+        async function deleteItem(maVatPham) {
+            if (!confirm('Bạn có chắc muốn xóa vật phẩm này?')) return;
+            try {
+                const res = await fetch(`http://localhost:5000/api/items/${maVatPham}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Xóa vật phẩm thành công');
+                    loadItems();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            } catch (error) {
+                alert('Lỗi kết nối máy chủ');
+            }
+        }
+
+        loadItems();
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        });
+    </script>
+</body>
+</html>

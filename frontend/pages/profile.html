@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ - NFT Rental</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        .profile-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .profile-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+        .profile-card .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0 auto 16px;
+            box-shadow: 0 0 40px rgba(124, 92, 252, 0.3);
+        }
+        .profile-card .name {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .profile-card .role {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin: 4px 0 16px;
+        }
+        .profile-card .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+            text-align: left;
+        }
+        .profile-card .info-grid .label {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .profile-card .info-grid .value {
+            font-weight: 600;
+            font-size: 14px;
+            word-break: break-all;
+        }
+        .profile-card .info-grid .item {
+            background: var(--bg-input);
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+        .profile-card .info-grid .item-full {
+            grid-column: 1 / -1;
+        }
+        .btn-edit {
+            margin-top: 20px;
+            padding: 10px 30px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-edit:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        .btn-edit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fa-solid fa-cube"></i></div>
+            <div><h2>NFT<span>RENTAL</span></h2><small>Game Marketplace</small></div>
+        </div>
+        <div class="user-profile">
+            <div class="avatar" id="avatarLetter">T</div>
+            <div class="user-info">
+                <strong id="userName">User</strong>
+                <span id="userRole">🎮 Game Thủ</span>
+            </div>
+            <i class="fa-solid fa-ellipsis-vertical profile-menu"></i>
+        </div>
+        <nav class="navigation">
+            <p class="menu-title">TRANG CHÍNH</p>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i><span>Tổng quan</span></a>
+            <a href="game.html" class="nav-item"><i class="fa-solid fa-gamepad"></i><span>Game của tôi</span></a>
+            <p class="menu-title">NFT MARKETPLACE</p>
+            <a href="marketplace.html" class="nav-item"><i class="fa-solid fa-store"></i><span>Chợ NFT</span></a>
+            <a href="nfts.html" class="nav-item"><i class="fa-solid fa-gem"></i><span>NFT của tôi</span></a>
+            <a href="rentals.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i><span>Đang thuê</span></a>
+            <p class="menu-title">TÀI SẢN</p>
+            <a href="wallet.html" class="nav-item"><i class="fa-solid fa-wallet"></i><span>Ví của tôi</span></a>
+            <a href="transactions.html" class="nav-item"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Giao dịch</span></a>
+            <a href="profile.html" class="nav-item active"><i class="fa-solid fa-user"></i><span>Hồ sơ</span></a>
+        </nav>
+        <div class="sidebar-bottom">
+            <a href="#" class="nav-item logout" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i><span>Đăng xuất</span></a>
+        </div>
+    </aside>
+
+    <!-- ===== NỘI DUNG ===== -->
+    <main class="main-content">
+        <header class="topbar">
+            <div class="page-title">
+                <button class="mobile-menu"><i class="fa-solid fa-bars"></i></button>
+                <div>
+                    <h1>👤 Hồ sơ của tôi</h1>
+                    <p>Thông tin tài khoản của bạn</p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <button class="icon-button"><i class="fa-regular fa-bell"></i><span class="notification-dot"></span></button>
+                <div class="wallet-balance">
+                    <div class="wallet-icon"><i class="fa-solid fa-wallet"></i></div>
+                    <div>
+                        <span>Số dư ví</span>
+                        <strong id="walletBalance">0 <small>COINS</small></strong>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+            <div class="profile-container">
+                <div class="profile-card">
+                    <div class="avatar" id="profileAvatar">T</div>
+                    <div class="name" id="profileName">User</div>
+                    <div class="role" id="profileRole">🎮 Game Thủ</div>
+
+                    <div class="info-grid">
+                        <div class="item">
+                            <div class="label">Tên đăng nhập</div>
+                            <div class="value" id="profileUsername">-</div>
+                        </div>
+                        <div class="item">
+                            <div class="label">Email</div>
+                            <div class="value" id="profileEmail">-</div>
+                        </div>
+                        <div class="item item-full">
+                            <div class="label">Địa chỉ ví</div>
+                            <div class="value" id="profileWallet" style="font-family:monospace;font-size:12px;">-</div>
+                        </div>
+                        <div class="item">
+                            <div class="label">Số NFT sở hữu</div>
+                            <div class="value" id="profileNFTs">0</div>
+                        </div>
+                        <div class="item">
+                            <div class="label">Đang thuê</div>
+                            <div class="value" id="profileRentals">0</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-edit" onclick="showToast('Tính năng đang phát triển', 'info')" disabled>
+                        <i class="fa-solid fa-pen"></i> Chỉnh sửa hồ sơ
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="../../js/api.js"></script>
+    <script>
+        if (!checkAuth()) window.location.href = 'login.html';
+        const user = api.getCurrentUser();
+        if (!user) window.location.href = 'login.html';
+
+        async function loadProfile() {
+            try {
+                // Thông tin user
+                document.getElementById('profileAvatar').textContent = user.fullname.charAt(0).toUpperCase();
+                document.getElementById('profileName').textContent = user.fullname || user.username;
+                document.getElementById('profileUsername').textContent = user.username;
+                document.getElementById('profileEmail').textContent = user.email || 'Chưa cập nhật';
+
+                // Wallet
+                const wallet = await api.getWallet(user.username);
+                if (wallet.success) {
+                    document.getElementById('walletBalance').innerHTML = 
+                        `${wallet.wallet.balance || 0} <small>COINS</small>`;
+                    document.getElementById('profileWallet').textContent = wallet.wallet.address || 'Chưa có ví';
+                }
+
+                // NFTs
+                const nfts = await api.getUserNFTs(user.username);
+                if (nfts.success) {
+                    document.getElementById('profileNFTs').textContent = nfts.nfts?.length || 0;
+                }
+
+                // Rentals
+                const rentals = await api.getUserRentals(user.username);
+                if (rentals.success) {
+                    const active = rentals.rentals?.filter(r => r.status === 'active') || [];
+                    document.getElementById('profileRentals').textContent = active.length;
+                }
+
+            } catch (error) {
+                showToast('Không thể tải thông tin hồ sơ', 'error');
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Bạn có chắc muốn đăng xuất?')) api.logout();
+        });
+
+        document.querySelector('.mobile-menu').addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('open');
+        });
+
+        loadProfile();
+    </script>
+</body>
+</html>

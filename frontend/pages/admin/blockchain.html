@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain - Quản trị</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    <style>
+        .blockchain-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .blockchain-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .blockchain-card .number {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        .blockchain-card .label {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .blockchain-card .icon {
+            font-size: 24px;
+            opacity: 0.5;
+        }
+        .blockchain-card.cyan .number { color: var(--cyan); }
+        .blockchain-card.green .number { color: var(--success); }
+        .blockchain-card.purple .number { color: var(--primary); }
+        .blockchain-card.orange .number { color: var(--warning); }
+
+        .block-detail {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .block-detail .hash {
+            color: var(--cyan);
+            word-break: break-all;
+        }
+        .block-detail .transactions {
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        .block-detail .tx-item {
+            padding: 4px 8px;
+            margin: 2px 0;
+            background: var(--surface);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .block-detail .tx-item .from { color: var(--primary); }
+        .block-detail .tx-item .to { color: var(--success); }
+        .block-detail .tx-item .amount { color: var(--warning); }
+        
+        @media (max-width: 768px) {
+            .blockchain-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .blockchain-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fa-solid fa-cube"></i></div>
+            <div><h2>NFT<span>RENTAL</span></h2><small>Quản trị</small></div>
+        </div>
+        <div class="user-profile">
+            <div class="avatar" id="avatarLetter">A</div>
+            <div class="user-info">
+                <strong id="userName">Admin</strong>
+                <span>👑 Quản trị viên</span>
+            </div>
+        </div>
+        <nav class="navigation">
+            <p class="menu-title">MENU QUẢN TRỊ</p>
+            <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-chart-pie"></i><span>Tổng quan</span></a>
+            <a href="users.html" class="nav-item"><i class="fa-solid fa-users"></i><span>Người dùng</span></a>
+            <a href="nfts.html" class="nav-item"><i class="fa-solid fa-gem"></i><span>NFT</span></a>
+            <a href="rentals.html" class="nav-item"><i class="fa-solid fa-handshake"></i><span>Thuê</span></a>
+            <a href="transactions.html" class="nav-item"><i class="fa-solid fa-list-ul"></i><span>Giao dịch</span></a>
+            <a href="blockchain.html" class="nav-item active"><i class="fa-solid fa-link"></i><span>Blockchain</span></a>
+        </nav>
+        <div class="sidebar-bottom">
+            <a href="#" class="nav-item logout" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i><span>Đăng xuất</span></a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="page-title">
+                <button class="mobile-menu"><i class="fa-solid fa-bars"></i></button>
+                <div>
+                    <h1>Blockchain</h1>
+                    <p>Xem trạng thái và các khối trong blockchain</p>
+                </div>
+            </div>
+            <div class="topbar-actions">
+                <button class="icon-button"><i class="fa-regular fa-bell"></i></button>
+                <div class="wallet-balance">
+                    <div class="wallet-icon"><i class="fa-solid fa-link"></i></div>
+                    <div>
+                        <span>Trạng thái</span>
+                        <strong id="chainStatus">● Đang chạy</strong>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+            <!-- Thống kê Blockchain -->
+            <div class="blockchain-stats">
+                <div class="blockchain-card cyan">
+                    <div class="icon"><i class="fa-solid fa-cube"></i></div>
+                    <div class="label">Tổng số khối</div>
+                    <div class="number" id="totalBlocks">0</div>
+                </div>
+                <div class="blockchain-card green">
+                    <div class="icon"><i class="fa-solid fa-list-ul"></i></div>
+                    <div class="label">Tổng giao dịch</div>
+                    <div class="number" id="totalTransactions">0</div>
+                </div>
+                <div class="blockchain-card purple">
+                    <div class="icon"><i class="fa-solid fa-clock"></i></div>
+                    <div class="label">Giao dịch chờ</div>
+                    <div class="number" id="pendingTransactions">0</div>
+                </div>
+                <div class="blockchain-card orange">
+                    <div class="icon"><i class="fa-solid fa-microchip"></i></div>
+                    <div class="label">Độ khó</div>
+                    <div class="number" id="difficulty">4</div>
+                </div>
+            </div>
+
+            <!-- Danh sách khối -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div><h3>Danh sách khối</h3><p id="blockCount">0 khối</p></div>
+                    <button class="btn-primary" onclick="location.reload()">
+                        <i class="fa-solid fa-rotate"></i> Làm mới
+                    </button>
+                </div>
+                <div id="blockchainList">
+                    <div style="text-align:center;padding:30px;color:var(--text-muted);">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script type="module" src="../js/api.js"></script>
+    <script type="module" src="../js/admin/blockchain.js"></script>
+</body>
+</html>

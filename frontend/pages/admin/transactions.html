@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý giao dịch</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Quản lý giao dịch</h1>
+            <nav>
+                <a href="dashboard.html">Tổng quan</a>
+                <a href="users.html">Người dùng</a>
+                <a href="games.html">Trò chơi</a>
+                <a href="characters.html">Nhân vật</a>
+                <a href="items.html">Vật phẩm</a>
+                <a href="nfts.html">NFT</a>
+                <a href="rentals.html">Hợp đồng</a>
+                <a href="transactions.html" class="active">Giao dịch</a>
+                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+            </nav>
+        </header>
+
+        <main>
+            <div id="transactionList"></div>
+        </main>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user || user.vai_tro !== 'quan_tri') {
+            window.location.href = '../login.html';
+        }
+
+        async function loadTransactions() {
+            try {
+                const res = await fetch('http://localhost:5000/api/admin/transactions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    let html = `
+                        <div class="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Mã giao dịch</th>
+                                        <th>Hợp đồng</th>
+                                        <th>Loại</th>
+                                        <th>Số tiền</th>
+                                        <th>Phương thức</th>
+                                        <th>Thời gian</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    if (data.transactions.length === 0) {
+                        html += `<tr><td colspan="7" style="text-align:center;color:#718096;">Chưa có giao dịch nào</td></tr>`;
+                    } else {
+                        data.transactions.forEach((tx, index) => {
+                            const typeMap = {
+                                'thanh_toan_thue': 'Thanh toán thuê',
+                                'hoan_tien_coc': 'Hoàn tiền cọc',
+                                'phat': 'Phạt'
+                            };
+                            html += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_giao_dich.slice(0, 8)}...</td>
+                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_hop_dong.slice(0, 8)}...</td>
+                                    <td>${typeMap[tx.loai_giao_dich] || tx.loai_giao_dich}</td>
+                                    <td><strong>${tx.so_tien_giao_dich}</strong> COINS</td>
+                                    <td>${tx.hinh_thuc_thanh_toan || 'Ví'}</td>
+                                    <td>${new Date(tx.thoi_gian_thanh_toan).toLocaleString('vi-VN')}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += '</tbody></table></div>';
+                    document.getElementById('transactionList').innerHTML = html;
+                }
+            } catch (error) {
+                document.getElementById('transactionList').innerHTML = `
+                    <div class="message message-error">Lỗi tải danh sách giao dịch</div>
+                `;
+            }
+        }
+
+        loadTransactions();
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '../login.html';
+        });
+    </script>
+</body>
+</html>
