@@ -7,34 +7,40 @@
     <link rel="stylesheet" href="../../css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản lý nhân vật</h1>
-            <nav>
-                <a href="dashboard.html">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html">Trò chơi</a>
-                <a href="characters.html" class="active">Nhân vật</a>
-                <a href="items.html">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html">Hợp đồng</a>
-                <a href="transactions.html">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="characters.html" class="active">Nhân vật</a>
+            <a href="items.html">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html">Hợp đồng</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <h2 style="font-size:20px;font-weight:600;">Danh sách nhân vật</h2>
-                <button onclick="showCreateForm()" class="btn btn-primary">Thêm nhân vật mới</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <h2 style="font-size:18px;font-weight:600;">Quản lý nhân vật</h2>
+                <button onclick="showCreateForm()" class="btn btn-primary">Thêm nhân vật</button>
             </div>
 
-            <div id="createForm" style="display:none;background:#fff;border:1px solid #e2e8f0;padding:20px;margin-bottom:20px;border-radius:4px;">
-                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Thêm nhân vật mới</h3>
-                <form id="createFormSubmit">
+            <div id="createForm" style="display:none;background:var(--bg-card);border:1px solid var(--border-color);padding:20px;margin-bottom:16px;">
+                <h3 style="margin-bottom:12px;">Thêm nhân vật mới</h3>
+                <form id="charForm">
                     <div class="form-group">
                         <label>Tên nhân vật</label>
-                        <input type="text" id="charName" placeholder="Nhập tên nhân vật" required>
+                        <input type="text" id="charName" required>
                     </div>
                     <div class="form-group">
                         <label>Trò chơi</label>
@@ -59,7 +65,24 @@
             window.location.href = '../login.html';
         }
 
-        let games = [];
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
+        async function loadGamesForSelect() {
+            try {
+                const res = await fetch('http://localhost:5000/api/games');
+                const data = await res.json();
+                if (data.success) {
+                    const select = document.getElementById('charGame');
+                    data.games.forEach(game => {
+                        select.innerHTML += `<option value="${game.ma_game}">${game.ten_game}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi tải game:', error);
+            }
+        }
 
         function showCreateForm() {
             document.getElementById('createForm').style.display = 'block';
@@ -68,27 +91,10 @@
 
         function hideCreateForm() {
             document.getElementById('createForm').style.display = 'none';
-            document.getElementById('createFormSubmit').reset();
+            document.getElementById('charForm').reset();
         }
 
-        async function loadGamesForSelect() {
-            try {
-                const res = await fetch('http://localhost:5000/api/games');
-                const data = await res.json();
-                if (data.success) {
-                    games = data.games;
-                    const select = document.getElementById('charGame');
-                    select.innerHTML = '<option value="">Chọn trò chơi</option>';
-                    games.forEach(g => {
-                        select.innerHTML += `<option value="${g.ma_game}">${g.ten_game}</option>`;
-                    });
-                }
-            } catch (error) {
-                console.error('Lỗi tải game:', error);
-            }
-        }
-
-        document.getElementById('createFormSubmit').addEventListener('submit', async function(e) {
+        document.getElementById('charForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const name = document.getElementById('charName').value.trim();
             const gameId = document.getElementById('charGame').value;
@@ -99,7 +105,7 @@
             }
 
             try {
-                const res = await fetch('http://localhost:5000/api/characters', {
+                const res = await fetch('http://localhost:5000/api/admin/characters', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -125,77 +131,51 @@
 
         async function loadCharacters() {
             try {
-                // Lấy tất cả game
-                const gamesRes = await fetch('http://localhost:5000/api/games');
-                const gamesData = await gamesRes.json();
-                const gameMap = {};
-                if (gamesData.success) {
-                    gamesData.games.forEach(g => { gameMap[g.ma_game] = g.ten_game; });
-                }
+                const res = await fetch('http://localhost:5000/api/admin/characters', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
 
-                // Lấy tất cả nhân vật (gọi API từng game)
-                let allCharacters = [];
-                if (gamesData.success) {
-                    for (const game of gamesData.games) {
-                        const res = await fetch(`http://localhost:5000/api/games/${game.ma_game}/characters`);
-                        const data = await res.json();
-                        if (data.success) {
-                            data.characters.forEach(c => {
-                                allCharacters.push({
-                                    ...c,
-                                    ten_game: game.ten_game
-                                });
-                            });
-                        }
-                    }
-                }
+                if (data.success) {
+                    let html = `
+                        <div class="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Tên nhân vật</th>
+                                        <th>Trò chơi</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
 
-                let html = `
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>STT</th>
-                                    <th>Tên nhân vật</th>
-                                    <th>Trò chơi</th>
-                                    <th>Ngày tạo</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                if (allCharacters.length === 0) {
-                    html += `<tr><td colspan="5" style="text-align:center;color:#718096;">Chưa có nhân vật nào</td></tr>`;
-                } else {
-                    allCharacters.forEach((c, index) => {
+                    data.characters.forEach((c, index) => {
                         html += `
                             <tr>
                                 <td>${index + 1}</td>
                                 <td><strong>${c.ten_nhan_vat}</strong></td>
-                                <td>${c.ten_game}</td>
-                                <td>${new Date(c.created_at).toLocaleDateString('vi-VN')}</td>
+                                <td>${c.ten_game || 'Không rõ'}</td>
                                 <td>
                                     <button onclick="deleteCharacter('${c.ma_nhan_vat}')" class="btn btn-danger btn-sm">Xóa</button>
                                 </td>
                             </tr>
                         `;
                     });
-                }
 
-                html += '</tbody></table></div>';
-                document.getElementById('characterList').innerHTML = html;
+                    html += '</tbody></table></div>';
+                    document.getElementById('characterList').innerHTML = html;
+                }
             } catch (error) {
-                document.getElementById('characterList').innerHTML = `
-                    <div class="message message-error">Lỗi tải danh sách nhân vật</div>
-                `;
+                document.getElementById('characterList').innerHTML = `<div class="msg msg-error">Lỗi tải danh sách nhân vật</div>`;
             }
         }
 
         async function deleteCharacter(maNhanVat) {
-            if (!confirm('Bạn có chắc muốn xóa nhân vật này?')) return;
+            if (!confirm('Xóa nhân vật này?')) return;
             try {
-                const res = await fetch(`http://localhost:5000/api/characters/${maNhanVat}`, {
+                const res = await fetch(`http://localhost:5000/api/admin/characters/${maNhanVat}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

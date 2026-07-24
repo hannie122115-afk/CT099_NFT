@@ -3,28 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý hợp đồng thuê</title>
+    <title>Quản lý hợp đồng</title>
     <link rel="stylesheet" href="../../css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản lý hợp đồng thuê</h1>
-            <nav>
-                <a href="dashboard.html">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html">Trò chơi</a>
-                <a href="characters.html">Nhân vật</a>
-                <a href="items.html">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html" class="active">Hợp đồng</a>
-                <a href="transactions.html">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="characters.html">Nhân vật</a>
+            <a href="items.html">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html" class="active">Hợp đồng</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
-            <div id="rentalList"></div>
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:14px;">Quản lý hợp đồng thuê</h2>
+
+            <!-- Loading -->
+            <div id="loading" style="text-align:center;padding:30px 0;color:var(--text-muted);">Đang tải...</div>
+
+            <!-- Nội dung -->
+            <div id="rentalList" style="display:none;"></div>
+
+            <!-- Lỗi -->
+            <div id="errorMsg" style="display:none;"></div>
         </main>
     </div>
 
@@ -36,71 +51,120 @@
             window.location.href = '../login.html';
         }
 
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
         async function loadRentals() {
+            const loading = document.getElementById('loading');
+            const container = document.getElementById('rentalList');
+            const errorDiv = document.getElementById('errorMsg');
+
             try {
                 const res = await fetch('http://localhost:5000/api/admin/rentals', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+
                 const data = await res.json();
+                loading.style.display = 'none';
 
                 if (data.success) {
-                    let html = `
-                        <div class="table-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>STT</th>
-                                        <th>NFT</th>
-                                        <th>Người thuê</th>
-                                        <th>Chủ sở hữu</th>
-                                        <th>Bắt đầu</th>
-                                        <th>Kết thúc</th>
-                                        <th>Trạng thái</th>
-                                        <th>Tiền</th>
-                                        <th>Đánh giá</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                    `;
+                    const rentals = data.rentals || [];
 
-                    if (data.rentals.length === 0) {
-                        html += `<tr><td colspan="9" style="text-align:center;color:#718096;">Chưa có hợp đồng thuê nào</td></tr>`;
-                    } else {
-                        data.rentals.forEach((rental, index) => {
-                            const statusMap = {
-                                'dang_thue': 'Đang thuê',
-                                'da_tra': 'Đã trả',
-                                'da_huy': 'Đã hủy'
-                            };
-                            const statusClass = {
-                                'dang_thue': 'badge-warning',
-                                'da_tra': 'badge-success',
-                                'da_huy': 'badge-danger'
-                            };
-                            html += `
-                                <tr>
-                                    <td>${index + 1}</td>
-                                    <td style="font-family:monospace;font-size:12px;">${rental.ma_bai_dang.slice(0, 8)}...</td>
-                                    <td>${rental.ten_nguoi_thue || rental.ma_nguoi_thue.slice(0, 8)}</td>
-                                    <td>${rental.ten_chu_so_huu || 'Không rõ'}</td>
-                                    <td>${new Date(rental.thoi_gian_bat_dau).toLocaleDateString('vi-VN')}</td>
-                                    <td>${new Date(rental.thoi_gian_ket_thuc).toLocaleDateString('vi-VN')}</td>
-                                    <td><span class="badge ${statusClass[rental.trang_thai_thue] || 'badge'}">${statusMap[rental.trang_thai_thue] || rental.trang_thai_thue}</span></td>
-                                    <td>${rental.tong_tien || 'N/A'} COINS</td>
-                                    <td>${rental.so_sao ? rental.so_sao + ' sao' : 'Chưa đánh giá'}</td>
-                                </tr>
-                            `;
-                        });
+                    if (rentals.length === 0) {
+                        container.style.display = 'block';
+                        container.innerHTML = `
+                            <div class="card">
+                                <div class="card-header">Chưa có hợp đồng</div>
+                                <p style="color:var(--text-muted);text-align:center;padding:20px 0;">
+                                    Chưa có hợp đồng thuê nào trong hệ thống.
+                                </p>
+                            </div>
+                        `;
+                        return;
                     }
 
-                    html += '</tbody></table></div>';
-                    document.getElementById('rentalList').innerHTML = html;
+                    container.style.display = 'block';
+                    renderRentals(rentals);
+                } else {
+                    errorDiv.style.display = 'block';
+                    errorDiv.className = 'msg msg-error';
+                    errorDiv.innerHTML = `
+                        <p><strong>Lỗi:</strong> ${data.message || 'Không thể tải danh sách hợp đồng'}</p>
+                        <button onclick="loadRentals()" class="btn btn-outline btn-sm" style="margin-top:8px;">Tải lại</button>
+                    `;
                 }
             } catch (error) {
-                document.getElementById('rentalList').innerHTML = `
-                    <div class="message message-error">Lỗi tải danh sách hợp đồng</div>
+                loading.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.className = 'msg msg-error';
+                errorDiv.innerHTML = `
+                    <p><strong>Lỗi kết nối máy chủ</strong></p>
+                    <p style="font-size:13px;color:var(--text-muted);margin-top:8px;">
+                        ${error.message || 'Vui lòng kiểm tra server đã chạy chưa'}
+                    </p>
+                    <button onclick="location.reload()" class="btn btn-outline btn-sm" style="margin-top:8px;">Tải lại</button>
                 `;
             }
+        }
+
+        function renderRentals(rentals) {
+            const container = document.getElementById('rentalList');
+
+            const statusMap = {
+                'dang_thue': 'Đang thuê',
+                'da_tra': 'Đã trả',
+                'da_huy': 'Đã hủy'
+            };
+            const statusClass = {
+                'dang_thue': 'badge-warning',
+                'da_tra': 'badge-success',
+                'da_huy': 'badge-danger'
+            };
+
+            let html = `
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Mã hợp đồng</th>
+                                <th>Vật phẩm</th>
+                                <th>Người thuê</th>
+                                <th>Chủ sở hữu</th>
+                                <th>Bắt đầu</th>
+                                <th>Kết thúc</th>
+                                <th>Trạng thái</th>
+                                <th>Tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            rentals.forEach((rental, index) => {
+                const status = rental.trang_thai_thue || 'dang_thue';
+                const tenVatPham = rental.ten_vat_pham || 'Không rõ';
+                const tenNguoiThue = rental.ten_nguoi_thue || 'Không rõ';
+                const tenChuSoHuu = rental.ten_chu_so_huu || 'Không rõ';
+                const tong = (rental.tong_tien || 0) + (rental.tien_coc || 0);
+
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td style="font-family:monospace;font-size:12px;">${rental.ma_hop_dong}</td>
+                        <td><strong>${tenVatPham}</strong></td>
+                        <td>${tenNguoiThue}</td>
+                        <td>${tenChuSoHuu}</td>
+                        <td>${new Date(rental.thoi_gian_bat_dau).toLocaleDateString('vi-VN')}</td>
+                        <td>${new Date(rental.thoi_gian_ket_thuc).toLocaleDateString('vi-VN')}</td>
+                        <td><span class="badge ${statusClass[status] || 'badge'}">${statusMap[status] || status}</span></td>
+                        <td>${tong} COINS</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
         }
 
         loadRentals();

@@ -7,42 +7,48 @@
     <link rel="stylesheet" href="../../css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản lý trò chơi</h1>
-            <nav>
-                <a href="dashboard.html">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html" class="active">Trò chơi</a>
-                <a href="characters.html">Nhân vật</a>
-                <a href="items.html">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html">Hợp đồng</a>
-                <a href="transactions.html">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html" class="active">Trò chơi</a>
+            <a href="characters.html">Nhân vật</a>
+            <a href="items.html">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html">Hợp đồng</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <h2 style="font-size:20px;font-weight:600;">Danh sách trò chơi</h2>
-                <button onclick="showCreateForm()" class="btn btn-primary">Thêm trò chơi mới</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <h2 style="font-size:18px;font-weight:600;">Quản lý trò chơi</h2>
+                <button onclick="showCreateForm()" class="btn btn-primary">Thêm trò chơi</button>
             </div>
 
-            <div id="createGameForm" style="display:none;background:#fff;border:1px solid #e2e8f0;padding:20px;margin-bottom:20px;border-radius:4px;">
-                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Thêm trò chơi mới</h3>
+            <div id="createForm" style="display:none;background:var(--bg-card);border:1px solid var(--border-color);padding:20px;margin-bottom:16px;">
+                <h3 style="margin-bottom:12px;">Thêm trò chơi mới</h3>
                 <form id="gameForm">
                     <div class="form-group">
                         <label>Tên trò chơi</label>
-                        <input type="text" id="gameName" placeholder="Nhập tên trò chơi" required>
+                        <input type="text" id="gameName" required>
                     </div>
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea id="gameDesc" placeholder="Nhập mô tả trò chơi"></textarea>
+                        <textarea id="gameDesc" rows="3"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Nhà phát hành</label>
-                        <input type="text" id="gamePublisher" placeholder="Nhập tên nhà phát hành">
+                        <input type="text" id="gamePublisher">
                     </div>
                     <div style="display:flex;gap:8px;">
                         <button type="submit" class="btn btn-primary">Lưu</button>
@@ -63,12 +69,16 @@
             window.location.href = '../login.html';
         }
 
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
         function showCreateForm() {
-            document.getElementById('createGameForm').style.display = 'block';
+            document.getElementById('createForm').style.display = 'block';
         }
 
         function hideCreateForm() {
-            document.getElementById('createGameForm').style.display = 'none';
+            document.getElementById('createForm').style.display = 'none';
             document.getElementById('gameForm').reset();
         }
 
@@ -84,7 +94,7 @@
             }
 
             try {
-                const res = await fetch('http://localhost:5000/api/games', {
+                const res = await fetch('http://localhost:5000/api/admin/games', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -111,42 +121,38 @@
 
         async function loadGames() {
             try {
-                const res = await fetch('http://localhost:5000/api/games');
+                const res = await fetch('http://localhost:5000/api/admin/games', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 const data = await res.json();
+
                 if (data.success) {
                     let html = '<div class="card-grid">';
-                    if (data.games.length === 0) {
-                        html += '<p style="color:#718096;">Chưa có trò chơi nào</p>';
-                    } else {
-                        for (const game of data.games) {
-                            html += `
-                                <div class="card">
-                                    <div class="card-header">${game.ten_game}</div>
-                                    <p>${game.mo_ta_game || 'Chưa có mô tả'}</p>
-                                    <p><strong>Nhà phát hành:</strong> ${game.nha_phat_hanh || 'Không rõ'}</p>
-                                    <p><strong>Số nhân vật:</strong> ${game.so_nhan_vat || 0}</p>
-                                    <div style="margin-top:12px;display:flex;gap:8px;">
-                                        <a href="characters.html?game_id=${game.ma_game}" class="btn btn-primary btn-sm">Xem nhân vật</a>
-                                        <button onclick="deleteGame('${game.ma_game}')" class="btn btn-danger btn-sm">Xóa</button>
-                                    </div>
+                    data.games.forEach(game => {
+                        html += `
+                            <div class="card">
+                                <div class="card-header">${game.ten_game}</div>
+                                <p style="color:var(--text-secondary);font-size:13px;">${game.mo_ta_game || 'Chưa có mô tả'}</p>
+                                <p><strong>Nhà phát hành:</strong> ${game.nha_phat_hanh || 'Không rõ'}</p>
+                                <p><strong>Số nhân vật:</strong> ${game.so_nhan_vat || 0}</p>
+                                <div style="margin-top:10px;display:flex;gap:6px;">
+                                    <button onclick="deleteGame('${game.ma_game}')" class="btn btn-danger btn-sm">Xóa</button>
                                 </div>
-                            `;
-                        }
-                    }
+                            </div>
+                        `;
+                    });
                     html += '</div>';
                     document.getElementById('gameList').innerHTML = html;
                 }
             } catch (error) {
-                document.getElementById('gameList').innerHTML = `
-                    <div class="message message-error">Lỗi tải danh sách trò chơi</div>
-                `;
+                document.getElementById('gameList').innerHTML = `<div class="msg msg-error">Lỗi tải danh sách trò chơi</div>`;
             }
         }
 
         async function deleteGame(maGame) {
-            if (!confirm('Bạn có chắc muốn xóa trò chơi này?')) return;
+            if (!confirm('Xóa trò chơi này?')) return;
             try {
-                const res = await fetch(`http://localhost:5000/api/games/${maGame}`, {
+                const res = await fetch(`http://localhost:5000/api/admin/games/${maGame}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

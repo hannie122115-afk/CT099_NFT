@@ -7,24 +7,32 @@
     <link rel="stylesheet" href="../../css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản trị hệ thống</h1>
-            <nav>
-                <a href="dashboard.html" class="active">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html">Trò chơi</a>
-                <a href="characters.html">Nhân vật</a>
-                <a href="items.html">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html">Hợp đồng</a>
-                <a href="transactions.html">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html" class="active">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="characters.html">Nhân vật</a>
+            <a href="items.html">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html">Hợp đồng</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
-            <div class="stats-grid" id="statsGrid">
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:14px;">Tổng quan hệ thống</h2>
+
+            <div id="statsGrid" class="stats-grid">
                 <div class="stat-card">
                     <div class="number" id="totalUsers">0</div>
                     <div class="label">Người dùng</div>
@@ -63,66 +71,25 @@
             window.location.href = '../login.html';
         }
 
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
         async function loadStats() {
             try {
-                // Gọi API thống kê
                 const res = await fetch('http://localhost:5000/api/admin/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
-                
+
                 if (data.success) {
                     document.getElementById('totalUsers').textContent = data.stats.total_users || 0;
                     document.getElementById('totalGames').textContent = data.stats.total_games || 0;
                     document.getElementById('totalNFTs').textContent = data.stats.total_nfts || 0;
                     document.getElementById('totalRentals').textContent = data.stats.total_rentals || 0;
-                } else {
-                    // Fallback: gọi từng API riêng
-                    loadStatsFallback();
                 }
             } catch (error) {
                 console.error('Lỗi tải thống kê:', error);
-                loadStatsFallback();
-            }
-        }
-
-        async function loadStatsFallback() {
-            try {
-                // Users
-                const usersRes = await fetch('http://localhost:5000/api/admin/users', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const usersData = await usersRes.json();
-                if (usersData.success) {
-                    document.getElementById('totalUsers').textContent = usersData.users.length;
-                }
-
-                // Games
-                const gamesRes = await fetch('http://localhost:5000/api/games');
-                const gamesData = await gamesRes.json();
-                if (gamesData.success) {
-                    document.getElementById('totalGames').textContent = gamesData.games.length;
-                }
-
-                // NFTs
-                const nftsRes = await fetch('http://localhost:5000/api/nfts', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const nftsData = await nftsRes.json();
-                if (nftsData.success) {
-                    document.getElementById('totalNFTs').textContent = nftsData.nfts.length;
-                }
-
-                // Rentals
-                const rentalsRes = await fetch('http://localhost:5000/api/admin/rentals', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const rentalsData = await rentalsRes.json();
-                if (rentalsData.success) {
-                    document.getElementById('totalRentals').textContent = rentalsData.rentals.length;
-                }
-            } catch (error) {
-                console.error('Lỗi tải thống kê fallback:', error);
             }
         }
 

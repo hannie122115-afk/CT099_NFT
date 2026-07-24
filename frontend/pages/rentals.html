@@ -34,13 +34,8 @@
                 <a href="marketplace.html" class="btn btn-primary btn-sm">Thuê thêm</a>
             </div>
 
-            <!-- Loading -->
             <div id="loading" style="text-align:center;padding:30px 0;color:var(--text-muted);">Đang tải...</div>
-
-            <!-- Nội dung -->
             <div id="rentalList" style="display:none;"></div>
-
-            <!-- Lỗi -->
             <div id="errorMsg" style="display:none;"></div>
         </main>
     </div>
@@ -50,8 +45,6 @@
         const user = JSON.parse(localStorage.getItem('user'));
 
         if (!token || !user) window.location.href = 'login.html';
-
-        console.log('User:', user);
 
         function toggleNav() {
             document.getElementById('topbarNav').classList.toggle('open');
@@ -73,19 +66,15 @@
             const errorDiv = document.getElementById('errorMsg');
 
             try {
-                console.log('Gọi API rentals...');
                 const res = await fetch(`http://localhost:5000/api/rentals/user/${user.ma_nguoi_dung}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
                 const data = await res.json();
-                console.log('Data từ API:', data);
-
                 loading.style.display = 'none';
 
                 if (data.success) {
                     const rentals = data.rentals || [];
-                    console.log('Số hợp đồng:', rentals.length);
 
                     if (rentals.length === 0) {
                         container.style.display = 'block';
@@ -110,7 +99,6 @@
                     errorDiv.textContent = 'Lỗi: ' + (data.message || 'Không thể tải danh sách');
                 }
             } catch (error) {
-                console.error('Lỗi:', error);
                 loading.style.display = 'none';
                 errorDiv.style.display = 'block';
                 errorDiv.className = 'msg msg-error';
@@ -153,7 +141,10 @@
                     'da_huy': 'badge-danger'
                 };
                 const status = rental.trang_thai_thue || 'dang_thue';
-                const tenVatPham = rental.ten_vat_pham || rental.ma_bai_dang?.slice(0, 8) || 'Không rõ';
+                
+                // ✅ Lấy tên vật phẩm (không hiển thị mã)
+                const tenVatPham = rental.ten_vat_pham || 'Không rõ';
+                
                 const tong = (rental.tong_tien || 0) + (rental.tien_coc || 0);
 
                 html += `

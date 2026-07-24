@@ -7,23 +7,31 @@
     <link rel="stylesheet" href="../../css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản lý giao dịch</h1>
-            <nav>
-                <a href="dashboard.html">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html">Trò chơi</a>
-                <a href="characters.html">Nhân vật</a>
-                <a href="items.html">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html">Hợp đồng</a>
-                <a href="transactions.html" class="active">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="characters.html">Nhân vật</a>
+            <a href="items.html">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html">Hợp đồng</a>
+            <a href="transactions.html" class="active">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
+            <h2 style="font-size:18px;font-weight:600;margin-bottom:14px;">Quản lý giao dịch</h2>
+
             <div id="transactionList"></div>
         </main>
     </div>
@@ -36,6 +44,10 @@
             window.location.href = '../login.html';
         }
 
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
+        }
+
         async function loadTransactions() {
             try {
                 const res = await fetch('http://localhost:5000/api/admin/transactions', {
@@ -45,39 +57,62 @@
 
                 if (data.success) {
                     let html = `
-                        <div class="table-wrapper">
+                        <div class="table-wrap">
                             <table>
                                 <thead>
                                     <tr>
                                         <th>STT</th>
                                         <th>Mã giao dịch</th>
-                                        <th>Hợp đồng</th>
+                                        <th>Người thực hiện</th>
                                         <th>Loại</th>
                                         <th>Số tiền</th>
-                                        <th>Phương thức</th>
+                                        <th>Hợp đồng</th>
                                         <th>Thời gian</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                     `;
 
+                    const typeMap = {
+                        'thanh_toan_thue': 'Thanh toán thuê',
+                        'hoan_tien_coc': 'Hoàn tiền cọc',
+                        'phat': 'Phạt',
+                        'nap_tien': 'Nạp tiền'
+                    };
+
                     if (data.transactions.length === 0) {
-                        html += `<tr><td colspan="7" style="text-align:center;color:#718096;">Chưa có giao dịch nào</td></tr>`;
+                        html += `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Chưa có giao dịch nào</td></tr>`;
                     } else {
                         data.transactions.forEach((tx, index) => {
-                            const typeMap = {
-                                'thanh_toan_thue': 'Thanh toán thuê',
-                                'hoan_tien_coc': 'Hoàn tiền cọc',
-                                'phat': 'Phạt'
-                            };
+                            // Lấy tên người thực hiện
+                            let nguoiThucHien = tx.ten_nguoi_thuc_hien || 'Hệ thống';
+                            let hoTen = tx.ho_ten_nguoi_thuc_hien || '';
+                            
+                            // Hiển thị tên đăng nhập + họ tên (nếu có)
+                            let displayName = nguoiThucHien;
+                            if (hoTen && hoTen !== 'Không rõ' && hoTen !== 'Hệ thống') {
+                                displayName = `${nguoiThucHien} (${hoTen})`;
+                            }
+                            
+                            // Nếu là nạp tiền, highlight màu xanh
+                            const isNapTien = tx.loai_giao_dich === 'nap_tien';
+                            const rowStyle = isNapTien ? 'background: rgba(16, 185, 129, 0.05);' : '';
+                            
                             html += `
-                                <tr>
+                                <tr style="${rowStyle}">
                                     <td>${index + 1}</td>
-                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_giao_dich.slice(0, 8)}...</td>
-                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_hop_dong.slice(0, 8)}...</td>
+                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_giao_dich}</td>
+                                    <td>
+                                        <strong>${displayName}</strong>
+                                        ${isNapTien ? '<span style="color:#10b981;font-size:11px;margin-left:5px;">⬆ Nạp</span>' : ''}
+                                    </td>
                                     <td>${typeMap[tx.loai_giao_dich] || tx.loai_giao_dich}</td>
-                                    <td><strong>${tx.so_tien_giao_dich}</strong> COINS</td>
-                                    <td>${tx.hinh_thuc_thanh_toan || 'Ví'}</td>
+                                    <td>
+                                        <strong style="${tx.loai_giao_dich === 'nap_tien' ? 'color:#10b981;' : ''}">
+                                            ${tx.so_tien_giao_dich}
+                                        </strong> COINS
+                                    </td>
+                                    <td style="font-family:monospace;font-size:12px;">${tx.ma_hop_dong || '-'}</td>
                                     <td>${new Date(tx.thoi_gian_thanh_toan).toLocaleString('vi-VN')}</td>
                                 </tr>
                             `;
@@ -88,9 +123,7 @@
                     document.getElementById('transactionList').innerHTML = html;
                 }
             } catch (error) {
-                document.getElementById('transactionList').innerHTML = `
-                    <div class="message message-error">Lỗi tải danh sách giao dịch</div>
-                `;
+                document.getElementById('transactionList').innerHTML = `<div class="msg msg-error">Lỗi tải danh sách giao dịch</div>`;
             }
         }
 

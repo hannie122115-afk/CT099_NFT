@@ -36,6 +36,8 @@ def rental_routes(app):
     # TẠO HỢP ĐỒNG THUÊ (HỖ TRỢ THUÊ THEO GIỜ)
     # ============================================================
     @app.route('/api/rentals/create', methods=['POST'])
+    # rental_routes.py - Phần create_rental đã sửa
+
     @token_required
     def create_rental(current_user):
         data = request.get_json()
@@ -106,6 +108,41 @@ def rental_routes(app):
         hopdong.don_vi_thue = don_vi
         hopdong.phi_dich_vu = phi_dich_vu
         hopdong.save()
+        
+        # Trừ tiền từ ví người thuê
+        Wallet.update_balance(wallet['dia_chi'], wallet['so_du'] - tong_thanh_toan)
+        
+        # Cộng tiền cho chủ sở hữu (nếu có NFT)
+        nfts = NFT.find_by_vat_pham(item['ma_vat_pham'])
+        if nfts:
+            owner_wallet = Wallet.find_by_address(nfts[0]['dia_chi_chu_so_huu'])
+            if owner_wallet:
+                Wallet.update_balance(owner_wallet['dia_chi'], owner_wallet['so_du'] + tong_tien)
+        
+        # Cập nhật trạng thái vật phẩm
+        VatPham.update_status(item['ma_vat_pham'], 'đang thuê')
+        
+        # Cập nhật trạng thái NFT
+        if nfts:
+            NFT.update_status(nfts[0]['ma_nft'], 'dang_thue')
+        
+        # Tạo giao dịch thanh toán
+        giao_dich = GiaoDich(
+            ma_hop_dong=hopdong.ma_hop_dong,
+            loai_giao_dich='thanh_toan_thue',
+            so_tien_giao_dich=tong_thanh_toan,
+            hinh_thuc_thanh_toan='ví',
+            ma_nguoi_dung=current_user.ma_nguoi_dung  # ✅ THÊM DÒNG NÀY
+        )
+        giao_dich.save()
+        
+        # ✅ THÊM RETURN Ở ĐÂY
+        return jsonify({
+            'success': True,
+            'message': f'Tạo hợp đồng thuê thành công!',
+            'hop_dong': hopdong.to_dict(),
+            'tong_thanh_toan': tong_thanh_toan
+        }), 201
         
 
     

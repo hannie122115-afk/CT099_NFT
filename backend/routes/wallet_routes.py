@@ -6,7 +6,7 @@ from models.giaodich_model import GiaoDich
 from models.vatpham_model import VatPham
 import hashlib
 import datetime
-import uuid  # <--- THÊM DÒNG NÀY
+import uuid
 import jwt
 from config import Config
 from functools import wraps
@@ -64,39 +64,40 @@ def wallet_routes(app):
         return jsonify({'success': True, 'wallet': wallet}), 200
     
     @app.route('/api/wallet/deposit', methods=['POST'])
-    def deposit():
+    @token_required  # ✅ THÊM token_required để lấy current_user
+    def deposit(current_user):
+        """Nạp tiền vào ví - ĐÃ SỬA"""
         data = request.get_json()
-        ten_nguoi_dung = data.get('ten_nguoi_dung')
         amount = data.get('so_tien', 0)
         
-        if not ten_nguoi_dung or amount <= 0:
-            return jsonify({'success': False, 'message': 'Thông tin không hợp lệ'}), 400
+        if amount <= 0:
+            return jsonify({'success': False, 'message': 'Số tiền không hợp lệ'}), 400
         
-        wallet = Wallet.find_by_username(ten_nguoi_dung)
+        # Lấy ví của người dùng hiện tại
+        wallet = Wallet.find_by_username(current_user.ten_nguoi_dung)
         if not wallet:
             return jsonify({'success': False, 'message': 'Ví không tồn tại'}), 404
         
+        # Cập nhật số dư
         new_balance = wallet['so_du'] + amount
         Wallet.update_balance(wallet['dia_chi'], new_balance)
         
-        # Tạo giao dịch nạp tiền
-        from models.nguoidung_model import NguoiDung
+        # 🔥 QUAN TRỌNG: Tạo giao dịch với ma_nguoi_dung
         from database.connection import giaodich_collection
         
-        user = NguoiDung.find_by_ten_nguoi_dung(ten_nguoi_dung)
-        if user:
-            giao_dich = {
-                'ma_giao_dich': str(uuid.uuid4()),
-                'ma_hop_dong': None,
-                'loai_giao_dich': 'nap_tien',
-                'so_tien_giao_dich': amount,
-                'hinh_thuc_thanh_toan': 'ví',
-                'thoi_gian_thanh_toan': datetime.datetime.now(datetime.timezone.utc),
-                'created_at': datetime.datetime.now(datetime.timezone.utc),
-                'ten_nguoi_dung': ten_nguoi_dung,
-                'ghi_chu': f'Nạp {amount} COINS vào ví'
-            }
-            giaodich_collection.insert_one(giao_dich)
+        giao_dich = {
+            'ma_giao_dich': str(uuid.uuid4()),
+            'ma_hop_dong': None,
+            'loai_giao_dich': 'nap_tien',
+            'so_tien_giao_dich': amount,
+            'hinh_thuc_thanh_toan': 'ví',
+            'ma_nguoi_dung': current_user.ma_nguoi_dung,  # ✅ THÊM DÒNG NÀY
+            'ten_nguoi_dung': current_user.ten_nguoi_dung,
+            'thoi_gian_thanh_toan': datetime.datetime.now(datetime.timezone.utc),
+            'created_at': datetime.datetime.now(datetime.timezone.utc),
+            'ghi_chu': f'Nạp {amount} COINS vào ví'
+        }
+        giaodich_collection.insert_one(giao_dich)
         
         return jsonify({
             'success': True,

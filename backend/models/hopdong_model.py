@@ -7,31 +7,31 @@ class HopDong:
         self.ma_hop_dong = str(uuid.uuid4())
         self.ma_bai_dang = ma_bai_dang
         self.ma_nguoi_thue = ma_nguoi_thue
-        self.ma_nhan_vat = ma_nhan_vat
         self.thoi_gian_bat_dau = thoi_gian_bat_dau
         self.thoi_gian_ket_thuc = thoi_gian_ket_thuc
+        self.trang_thai_thue = 'dang_thue'  # dang_thue, da_tra, da_huy
+        self.ma_nhan_vat = ma_nhan_vat
         self.tong_tien = 0
         self.tien_coc = 0
-        self.trang_thai_thue = 'dang_thue'
-        self.danh_gia = None
-        self.nhan_xet = None
-        self.ngay_tra = None
-        self.created_at = datetime.datetime.utcnow()  # Không có timezone
+        self.so_ngay_thue = 0
+        self.don_vi_thue = 'ngay'
+        self.phi_dich_vu = 0
+        self.created_at = datetime.datetime.now(datetime.timezone.utc)
     
     def to_dict(self):
         return {
             'ma_hop_dong': self.ma_hop_dong,
             'ma_bai_dang': self.ma_bai_dang,
             'ma_nguoi_thue': self.ma_nguoi_thue,
-            'ma_nhan_vat': self.ma_nhan_vat,
             'thoi_gian_bat_dau': self.thoi_gian_bat_dau,
             'thoi_gian_ket_thuc': self.thoi_gian_ket_thuc,
+            'trang_thai_thue': self.trang_thai_thue,
+            'ma_nhan_vat': self.ma_nhan_vat,
             'tong_tien': self.tong_tien,
             'tien_coc': self.tien_coc,
-            'trang_thai_thue': self.trang_thai_thue,
-            'danh_gia': self.danh_gia,
-            'nhan_xet': self.nhan_xet,
-            'ngay_tra': self.ngay_tra,
+            'so_ngay_thue': self.so_ngay_thue,
+            'don_vi_thue': self.don_vi_thue,
+            'phi_dich_vu': self.phi_dich_vu,
             'created_at': self.created_at
         }
     
@@ -48,16 +48,40 @@ class HopDong:
         return list(hopdong_collection.find({'ma_nguoi_thue': ma_nguoi_thue}, {'_id': 0}))
     
     @staticmethod
-    def find_active():
-        return list(hopdong_collection.find({'trang_thai_thue': 'dang_thue'}, {'_id': 0}))
+    def find_by_bai_dang(ma_bai_dang):
+        return list(hopdong_collection.find({'ma_bai_dang': ma_bai_dang}, {'_id': 0}))
     
     @staticmethod
     def find_all():
         return list(hopdong_collection.find({}, {'_id': 0}))
     
     @staticmethod
-    def update_status(ma_hop_dong, status):
+    def update_status(ma_hop_dong, trang_thai):
         hopdong_collection.update_one(
             {'ma_hop_dong': ma_hop_dong},
-            {'$set': {'trang_thai_thue': status}}
+            {'$set': {'trang_thai_thue': trang_thai}}
         )
+    
+    @staticmethod
+    def find_active_by_nft(ma_nft):
+        """Tìm hợp đồng đang thuê của một NFT"""
+        from models.nft_model import NFT
+        from models.vatpham_model import VatPham
+        
+        # Tìm NFT để lấy ma_vat_pham
+        nft = NFT.find_by_ma(ma_nft)
+        if not nft:
+            return None
+        
+        # Tìm vật phẩm từ NFT
+        item = VatPham.find_by_ma(nft.get('ma_vat_pham'))
+        if not item:
+            return None
+        
+        # Tìm hợp đồng đang thuê của vật phẩm này
+        hopdong = hopdong_collection.find_one({
+            'ma_bai_dang': item.get('ma_bai_dang'),
+            'trang_thai_thue': 'dang_thue'
+        })
+        
+        return hopdong

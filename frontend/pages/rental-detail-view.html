@@ -41,12 +41,44 @@
             margin-top: 10px;
             background: var(--danger-dim);
         }
-        .msg-success {
-            border: 1px solid var(--success);
-            color: var(--success);
-            padding: 10px 14px;
-            margin-top: 10px;
-            background: var(--success-dim);
+        .contract-id {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        .price-detail {
+            background: var(--bg-input);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin: 6px 0;
+        }
+        .price-detail .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+        .price-detail .row.total {
+            font-weight: 700;
+            font-size: 16px;
+            border-top: 2px solid var(--border-color);
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+        .price-detail .row .label {
+            color: var(--text-secondary);
+        }
+        .price-detail .row .value {
+            font-weight: 600;
+        }
+        .price-detail .row .value.fee {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .price-detail .row .value.total-amount {
+            color: var(--gold);
+            font-size: 18px;
         }
         @media (max-width: 768px) {
             .info-grid {
@@ -101,8 +133,6 @@
             window.location.href = 'rentals.html';
         }
 
-        console.log('🔍 Contract ID:', contractId);
-
         function toggleNav() {
             document.getElementById('topbarNav').classList.toggle('open');
         }
@@ -123,7 +153,6 @@
             const container = document.getElementById('contractDetail');
 
             try {
-                console.log('📡 Gọi API detail...');
                 const res = await fetch(`http://localhost:5000/api/rentals/${contractId}/detail`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -131,9 +160,7 @@
                     }
                 });
 
-                console.log('📥 Status:', res.status);
                 const data = await res.json();
-                console.log('📦 Data:', data);
 
                 if (data.success) {
                     renderContract(data);
@@ -147,7 +174,7 @@
                     `;
                 }
             } catch (error) {
-                console.error('❌ Lỗi:', error);
+                console.error('Lỗi:', error);
                 container.innerHTML = `
                     <div class="msg-error">
                         <strong>Lỗi kết nối máy chủ</strong>
@@ -180,31 +207,70 @@
             const isRenter = user.ma_nguoi_dung === hd.ma_nguoi_thue;
             const isActive = hd.trang_thai_thue === 'dang_thue';
 
+            // Lấy tên người thuê
+            let tenNguoiThue = 'Không rõ';
+            if (nguoi_thue) {
+                tenNguoiThue = nguoi_thue.ho_ten || nguoi_thue.ten_nguoi_dung || 'Không rõ';
+            }
+
+            // Lấy tên chủ sở hữu
+            let tenChuSoHuu = data.ten_chu_so_huu || 'Không rõ';
+
+            // Lấy tên nhân vật
+            let tenNhanVat = 'Không chọn';
+            if (nhan_vat) {
+                tenNhanVat = nhan_vat.ten_nhan_vat || 'Không rõ';
+            }
+
+            // Lấy tên vật phẩm
+            let tenVatPham = 'Không rõ';
+            if (vp) {
+                tenVatPham = vp.ten || 'Không rõ';
+            }
+
+            // Lấy tên NFT
+            let tenNFT = 'Không có';
+            if (nft) {
+                tenNFT = nft.ten || 'Không có tên';
+            }
+
+            // ============================================================
+            // 🔥 CHI TIẾT TIỀN - MINH BẠCH 60.5 COINS
+            // ============================================================
+            const tongTienThue = hd.tong_tien || 0;          // 10 COINS
+            const tienCoc = hd.tien_coc || 0;                // 50 COINS
+            const phiDichVu = hd.phi_dich_vu || 0;           // 0.5 COINS
+            const tongThanhToan = tongTienThue + tienCoc + phiDichVu;  // 60.5 COINS
+
+            // Lấy tỷ lệ phí từ config (nếu có)
+            const tyLePhi = data.ty_le_phi || 5;  // Mặc định 5%
+
             let html = `
                 <div class="card">
-                    <div class="card-header">Hợp đồng #${hd.ma_hop_dong.slice(0, 8)}</div>
+                    <div class="card-header">
+                        Hợp đồng thuê
+                        <span class="contract-id">Mã: ${hd.ma_hop_dong}</span>
+                    </div>
 
                     <div class="section-title">Thông tin vật phẩm</div>
                     <div class="info-grid">
-                        <span class="label">Tên</span>
-                        <span class="value">${vp ? vp.ten : 'Không rõ'}</span>
+                        <span class="label">Tên vật phẩm</span>
+                        <span class="value"><strong>${tenVatPham}</strong></span>
                         <span class="label">Mô tả</span>
                         <span class="value">${vp ? vp.mo_ta : 'Không có'}</span>
                         <span class="label">Loại</span>
                         <span class="value">${vp ? vp.loai : 'Không rõ'}</span>
                         <span class="label">Giá thuê</span>
                         <span class="value">${vp ? vp.gia_thue : 0} COINS/ngày</span>
-                        <span class="label">Tiền cọc</span>
-                        <span class="value">${vp ? vp.tien_coc : 0} COINS</span>
                     </div>
 
                     <div class="section-title">Thông tin NFT</div>
                     ${nft ? `
                         <div class="info-grid">
                             <span class="label">Tên NFT</span>
-                            <span class="value">${nft.ten}</span>
+                            <span class="value"><strong>${tenNFT}</strong></span>
                             <span class="label">Chủ sở hữu</span>
-                            <span class="value">${data.ten_chu_so_huu || 'Không rõ'}</span>
+                            <span class="value">${tenChuSoHuu}</span>
                             <span class="label">Giá thuê</span>
                             <span class="value">${nft.gia_thue} COINS/ngày</span>
                             <span class="label">Trạng thái</span>
@@ -217,23 +283,43 @@
                     <div class="section-title">Thông tin thuê</div>
                     <div class="info-grid">
                         <span class="label">Người thuê</span>
-                        <span class="value">${nguoi_thue ? nguoi_thue.ho_ten || nguoi_thue.ten_nguoi_dung : 'Không rõ'}</span>
-                        ${nhan_vat ? `
-                            <span class="label">Nhân vật</span>
-                            <span class="value">${nhan_vat.ten_nhan_vat}</span>
-                        ` : ''}
+                        <span class="value"><strong>${tenNguoiThue}</strong></span>
+                        <span class="label">Nhân vật sử dụng</span>
+                        <span class="value">${tenNhanVat}</span>
                         <span class="label">Bắt đầu</span>
                         <span class="value">${new Date(hd.thoi_gian_bat_dau).toLocaleString('vi-VN')}</span>
                         <span class="label">Kết thúc</span>
                         <span class="value">${new Date(hd.thoi_gian_ket_thuc).toLocaleString('vi-VN')}</span>
-                        <span class="label">Tổng tiền thuê</span>
-                        <span class="value">${hd.tong_tien || 0} COINS</span>
-                        <span class="label">Tiền cọc</span>
-                        <span class="value">${hd.tien_coc || 0} COINS</span>
-                        <span class="label">Tổng thanh toán</span>
-                        <span class="value"><strong>${(hd.tong_tien || 0) + (hd.tien_coc || 0)}</strong> COINS</span>
                         <span class="label">Trạng thái</span>
                         <span class="value"><span class="badge ${statusClass[hd.trang_thai_thue] || 'badge'}">${statusMap[hd.trang_thai_thue] || hd.trang_thai_thue}</span></span>
+                    </div>
+
+                    <!-- 🔥 CHI TIẾT TIỀN - MINH BẠCH 60.5 COINS -->
+                    <div class="section-title">Chi tiết thanh toán</div>
+                    <div class="price-detail">
+                        <div class="row">
+                            <span class="label">Tiền thuê (${hd.so_ngay_thue || 1} ngày × ${vp ? vp.gia_thue : 0} COINS)</span>
+                            <span class="value">${tongTienThue} COINS</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Tiền cọc (bảo đảm)</span>
+                            <span class="value">${tienCoc} COINS</span>
+                        </div>
+                        ${phiDichVu > 0 ? `
+                            <div class="row">
+                                <span class="label">Phí dịch vụ (${tyLePhi}%)</span>
+                                <span class="value fee">+ ${phiDichVu} COINS</span>
+                            </div>
+                        ` : ''}
+                        <div class="row total">
+                            <span class="label">Tổng thanh toán</span>
+                            <span class="value total-amount">${tongThanhToan} COINS</span>
+                        </div>
+                        ${phiDichVu > 0 ? `
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:6px;text-align:right;border-top:1px dashed var(--border-color);padding-top:6px;">
+                                * Phí dịch vụ ${tyLePhi}% được áp dụng cho tổng tiền thuê
+                            </div>
+                        ` : ''}
                     </div>
 
                     <div class="section-title">Lịch sử giao dịch</div>
@@ -244,7 +330,7 @@
                                 <tbody>
                                     ${data.giao_dich.map(g => `
                                         <tr>
-                                            <td>${g.loai_giao_dich === 'thanh_toan_thue' ? 'Thanh toán thuê + cọc' : g.loai_giao_dich === 'hoan_tien_coc' ? 'Hoàn tiền cọc' : g.loai_giao_dich}</td>
+                                            <td>${g.loai_giao_dich === 'thanh_toan_thue' ? 'Thanh toán thuê + cọc' : g.loai_giao_dich === 'hoan_tien_coc' ? 'Hoàn tiền cọc' : g.loai_giao_dich === 'gia_han' ? 'Gia hạn' : g.loai_giao_dich}</td>
                                             <td><strong>${g.so_tien_giao_dich}</strong> COINS</td>
                                             <td>${new Date(g.thoi_gian_thanh_toan).toLocaleString('vi-VN')}</td>
                                         </tr>

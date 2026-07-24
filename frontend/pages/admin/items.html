@@ -5,89 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý vật phẩm</title>
     <link rel="stylesheet" href="../../css/style.css">
+    <style>
+        .item-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .item-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+        .item-desc {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+        .item-tags {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+        .item-tags span {
+            font-size: 13px;
+            background: var(--background);
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+        .item-stats {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .stat-box {
+            background: var(--background);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+        }
+        .stat-box .number {
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .stat-box .number.green { color: #10b981; }
+        .stat-box .number.orange { color: #f59e0b; }
+        .stat-box .number.blue { color: var(--primary); }
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .item-actions .btn {
+            font-size: 13px;
+        }
+        .item-right {
+            text-align: right;
+        }
+        .loading-text {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+        }
+        .msg-error {
+            color: #ef4444;
+            padding: 12px;
+            background: #fee2e2;
+            border-radius: 6px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Quản lý vật phẩm</h1>
-            <nav>
-                <a href="dashboard.html">Tổng quan</a>
-                <a href="users.html">Người dùng</a>
-                <a href="games.html">Trò chơi</a>
-                <a href="characters.html">Nhân vật</a>
-                <a href="items.html" class="active">Vật phẩm</a>
-                <a href="nfts.html">NFT</a>
-                <a href="rentals.html">Hợp đồng</a>
-                <a href="transactions.html">Giao dịch</a>
-                <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
-            </nav>
-        </header>
+    <header class="topbar">
+        <div class="topbar-brand">NFT <span>RENTAL</span></div>
+        <div class="topbar-nav" id="topbarNav">
+            <a href="dashboard.html">Tổng quan</a>
+            <a href="users.html">Người dùng</a>
+            <a href="games.html">Trò chơi</a>
+            <a href="characters.html">Nhân vật</a>
+            <a href="items.html" class="active">Vật phẩm</a>
+            <a href="nfts.html">NFT</a>
+            <a href="rentals.html">Hợp đồng</a>
+            <a href="transactions.html">Giao dịch</a>
+            <a href="#" class="logout" id="logoutBtn">Đăng xuất</a>
+        </div>
+        <div class="topbar-right">
+            <div class="balance-box">
+                <span class="amount" id="walletBalance">0</span> COINS
+            </div>
+            <button class="topbar-toggle" onclick="toggleNav()">☰</button>
+        </div>
+    </header>
 
+    <div class="container">
         <main>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-                <h2 style="font-size:20px;font-weight:600;">Danh sách vật phẩm</h2>
-                <button onclick="showCreateForm()" class="btn btn-primary">Thêm vật phẩm mới</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <h2 style="font-size:18px;font-weight:600;">Quản lý vật phẩm</h2>
+                    <p style="font-size:13px;color:var(--text-muted);">Danh sách các loại vật phẩm trong hệ thống</p>
+                </div>
+                <button onclick="showCreateForm()" class="btn btn-primary">Thêm vật phẩm</button>
             </div>
 
-            <div id="createForm" style="display:none;background:#fff;border:1px solid #e2e8f0;padding:20px;margin-bottom:20px;border-radius:4px;">
-                <h3 style="font-size:16px;font-weight:600;margin-bottom:12px;">Thêm vật phẩm mới</h3>
-                <form id="createFormSubmit">
+            <!-- Form thêm vật phẩm -->
+            <div id="createForm" style="display:none;background:var(--bg-card);border:1px solid var(--border-color);padding:20px;margin-bottom:16px;border-radius:8px;">
+                <h3 style="margin-bottom:12px;">Thêm vật phẩm mới</h3>
+                <form id="itemForm">
                     <div class="form-group">
-                        <label>Tên vật phẩm</label>
-                        <input type="text" id="itemName" placeholder="Nhập tên vật phẩm" required>
+                        <label>Tên vật phẩm <span style="color:red;">*</span></label>
+                        <input type="text" id="itemName" required>
                     </div>
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea id="itemDesc" placeholder="Nhập mô tả vật phẩm"></textarea>
+                        <textarea id="itemDesc" rows="2"></textarea>
                     </div>
                     <div class="form-group">
                         <label>Loại</label>
                         <select id="itemType">
-                            <option value="vu_khi">Vũ khí</option>
-                            <option value="ao_giap">Áo giáp</option>
-                            <option value="ky_nang">Kỹ năng</option>
-                            <option value="phu_kien">Phụ kiện</option>
+                            <option value="vũ khí">Vũ khí</option>
+                            <option value="áo giáp">Áo giáp</option>
+                            <option value="kỹ năng">Kỹ năng</option>
+                            <option value="phụ kiện">Phụ kiện</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Giá thuê (COINS/ngày)</label>
-                        <input type="number" id="itemPrice" value="10" min="1" required>
+                        <label>Giá thuê (COINS/ngày) <span style="color:red;">*</span></label>
+                        <input type="number" id="itemPrice" value="10" min="1">
                     </div>
                     <div class="form-group">
                         <label>Tiền cọc (COINS)</label>
                         <input type="number" id="itemDeposit" value="50" min="0">
                     </div>
                     <div class="form-group">
-                        <label>Thời gian thuê tối đa (ngày)</label>
+                        <label>Thời gian tối đa (ngày)</label>
                         <input type="number" id="itemMaxDays" value="30" min="1">
                     </div>
                     <div class="form-group">
                         <label>Độ hiếm</label>
                         <select id="itemRarity">
-                            <option value="thuong">Thường</option>
-                            <option value="hiem">Hiếm</option>
-                            <option value="sieu_hiem">Siêu hiếm</option>
-                            <option value="huyen_thoai">Huyền thoại</option>
+                            <option value="thường">Thường</option>
+                            <option value="hiếm">Hiếm</option>
+                            <option value="siêu hiếm">Siêu hiếm</option>
+                            <option value="huyền thoại">Huyền thoại</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Trò chơi</label>
+                        <label>Trò chơi <span style="color:red;">*</span></label>
                         <select id="itemGame" required></select>
                     </div>
                     <div class="form-group">
                         <label>Dùng cho nhân vật</label>
                         <select id="itemCharacter">
-                            <option value="">Tất cả nhân vật</option>
+                            <option value="">Tất cả</option>
                         </select>
                     </div>
-                    <div style="display:flex;gap:8px;">
+                    <div style="display:flex;gap:8px;margin-top:12px;">
                         <button type="submit" class="btn btn-primary">Lưu</button>
                         <button type="button" onclick="hideCreateForm()" class="btn btn-outline">Hủy</button>
                     </div>
                 </form>
             </div>
 
-            <div id="itemList"></div>
+            <!-- Danh sách vật phẩm -->
+            <div id="itemList">
+                <div class="loading-text">Đang tải...</div>
+            </div>
         </main>
     </div>
 
@@ -99,29 +193,20 @@
             window.location.href = '../login.html';
         }
 
-        let games = [];
-        let characters = {};
-
-        function showCreateForm() {
-            document.getElementById('createForm').style.display = 'block';
-            loadGameSelect();
+        function toggleNav() {
+            document.getElementById('topbarNav').classList.toggle('open');
         }
 
-        function hideCreateForm() {
-            document.getElementById('createForm').style.display = 'none';
-            document.getElementById('createFormSubmit').reset();
-        }
-
+        // ===== LOAD GAME SELECT =====
         async function loadGameSelect() {
             try {
                 const res = await fetch('http://localhost:5000/api/games');
                 const data = await res.json();
                 if (data.success) {
-                    games = data.games;
                     const select = document.getElementById('itemGame');
-                    select.innerHTML = '<option value="">Chọn trò chơi</option>';
-                    games.forEach(g => {
-                        select.innerHTML += `<option value="${g.ma_game}">${g.ten_game}</option>`;
+                    select.innerHTML = '';
+                    data.games.forEach(game => {
+                        select.innerHTML += `<option value="${game.ma_game}">${game.ten_game}</option>`;
                     });
                 }
             } catch (error) {
@@ -132,7 +217,7 @@
         document.getElementById('itemGame').addEventListener('change', async function() {
             const gameId = this.value;
             const charSelect = document.getElementById('itemCharacter');
-            charSelect.innerHTML = '<option value="">Tất cả nhân vật</option>';
+            charSelect.innerHTML = '<option value="">Tất cả</option>';
             if (gameId) {
                 try {
                     const res = await fetch(`http://localhost:5000/api/games/${gameId}/characters`);
@@ -148,7 +233,18 @@
             }
         });
 
-        document.getElementById('createFormSubmit').addEventListener('submit', async function(e) {
+        function showCreateForm() {
+            document.getElementById('createForm').style.display = 'block';
+            loadGameSelect();
+        }
+
+        function hideCreateForm() {
+            document.getElementById('createForm').style.display = 'none';
+            document.getElementById('itemForm').reset();
+        }
+
+        // ===== CREATE ITEM =====
+        document.getElementById('itemForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const data = {
                 ten_vat_pham: document.getElementById('itemName').value.trim(),
@@ -168,7 +264,7 @@
             }
 
             try {
-                const res = await fetch('http://localhost:5000/api/items', {
+                const res = await fetch('http://localhost:5000/api/admin/items', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -189,92 +285,90 @@
             }
         });
 
+        // ===== LOAD ITEMS =====
         async function loadItems() {
             try {
-                // Lấy tất cả game
-                const gamesRes = await fetch('http://localhost:5000/api/games');
-                const gamesData = await gamesRes.json();
-                const gameMap = {};
-                if (gamesData.success) {
-                    gamesData.games.forEach(g => { gameMap[g.ma_game] = g.ten_game; });
-                }
+                const res = await fetch('http://localhost:5000/api/admin/items', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
 
-                // Lấy tất cả vật phẩm từ tất cả game
-                let allItems = [];
-                if (gamesData.success) {
-                    for (const game of gamesData.games) {
-                        const res = await fetch(`http://localhost:5000/api/games/${game.ma_game}/items`);
-                        const data = await res.json();
-                        if (data.success) {
-                            data.items.forEach(item => {
-                                allItems.push({
-                                    ...item,
-                                    ten_game: game.ten_game
-                                });
-                            });
-                        }
+                if (data.success) {
+                    let html = '';
+
+                    if (data.items.length === 0) {
+                        html = `<div class="item-card"><p style="text-align:center;padding:20px;color:var(--text-muted);">Chưa có vật phẩm nào</p></div>`;
+                    } else {
+                        data.items.forEach((item) => {
+                            const nfts = item.nfts || [];
+                            const total = nfts.length;
+                            const rented = nfts.filter(n => n.trang_thai === 'dang_thue').length;
+                            const available = nfts.filter(n => n.trang_thai === 'co_san').length;
+
+                            html += `
+                                <div class="item-card">
+                                    <div class="item-header">
+                                        <div>
+                                            <div class="item-title">${item.ten_vat_pham}</div>
+                                            <div class="item-desc">${item.mo_ta || 'Chưa có mô tả'}</div>
+                                            <div class="item-tags">
+                                                <span>Loại: ${item.loai || 'Không rõ'}</span>
+                                                <span>Trò chơi: ${item.ten_game || 'Không rõ'}</span>
+                                                <span>Độ hiếm: ${item.do_hiem || 'Thường'}</span>
+                                                <span>Giá thuê: ${item.gia_thue} COINS/ngày</span>
+                                                <span>Tiền cọc: ${item.tien_dat_coc} COINS</span>
+                                            </div>
+                                            <div class="item-stats">
+                                                <span class="stat-box">
+                                                    Tổng NFT: <span class="number blue">${total}</span>
+                                                </span>
+                                                <span class="stat-box">
+                                                    Có sẵn: <span class="number green">${available}</span>
+                                                </span>
+                                                <span class="stat-box">
+                                                    Đang thuê: <span class="number orange">${rented}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="item-right">
+                                            <div class="item-actions" style="justify-content:flex-end;">
+                                                <a href="nfts.html?item=${item.ma_vat_pham}" class="btn btn-outline btn-sm">
+                                                    Xem NFT (${total})
+                                                </a>
+                                                <button onclick="deleteItem('${item.ma_vat_pham}')" 
+                                                        class="btn btn-danger btn-sm"
+                                                        ${rented > 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;" title="Không thể xóa vì có NFT đang thuê"' : ''}>
+                                                    Xóa
+                                                </button>
+                                            </div>
+                                            ${rented > 0 ? `<div style="font-size:12px;color:#f59e0b;margin-top:4px;">Có ${rented} NFT đang được thuê, không thể xóa</div>` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
                     }
+
+                    document.getElementById('itemList').innerHTML = html;
                 }
-
-                let html = `
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>STT</th>
-                                    <th>Tên vật phẩm</th>
-                                    <th>Loại</th>
-                                    <th>Giá thuê</th>
-                                    <th>Trò chơi</th>
-                                    <th>Trạng thái</th>
-                                    <th>NFT</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                if (allItems.length === 0) {
-                    html += `<tr><td colspan="8" style="text-align:center;color:#718096;">Chưa có vật phẩm nào</td></tr>`;
-                } else {
-                    allItems.forEach((item, index) => {
-                        const statusText = item.trang_thai_thue === 'con_trong' ? 'Có sẵn' : 'Đang thuê';
-                        const statusClass = item.trang_thai_thue === 'con_trong' ? 'badge-success' : 'badge-warning';
-                        const hasNft = item.has_nft ? 'Có' : 'Chưa có';
-                        html += `
-                            <tr>
-                                <td>${index + 1}</td>
-                                <td><strong>${item.ten_vat_pham}</strong></td>
-                                <td>${item.loai || 'Không rõ'}</td>
-                                <td>${item.gia_thue} COINS</td>
-                                <td>${item.ten_game}</td>
-                                <td><span class="badge ${statusClass}">${statusText}</span></td>
-                                <td><span class="badge ${item.has_nft ? 'badge-success' : 'badge'}">${hasNft}</span></td>
-                                <td>
-                                    <button onclick="deleteItem('${item.ma_vat_pham}')" class="btn btn-danger btn-sm">Xóa</button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-
-                html += '</tbody></table></div>';
-                document.getElementById('itemList').innerHTML = html;
             } catch (error) {
-                document.getElementById('itemList').innerHTML = `
-                    <div class="message message-error">Lỗi tải danh sách vật phẩm</div>
-                `;
+                document.getElementById('itemList').innerHTML = `<div class="msg-error">Lỗi tải danh sách vật phẩm</div>`;
             }
         }
 
+        // ===== DELETE ITEM =====
         async function deleteItem(maVatPham) {
-            if (!confirm('Bạn có chắc muốn xóa vật phẩm này?')) return;
+            if (!confirm('Bạn có chắc chắn muốn xóa vật phẩm này?\nLưu ý: Không thể xóa nếu có NFT đang thuê!')) {
+                return;
+            }
+
             try {
-                const res = await fetch(`http://localhost:5000/api/items/${maVatPham}`, {
+                const res = await fetch(`http://localhost:5000/api/admin/items/${maVatPham}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await res.json();
+
                 if (data.success) {
                     alert('Xóa vật phẩm thành công');
                     loadItems();
@@ -286,8 +380,10 @@
             }
         }
 
+        // ===== INIT =====
         loadItems();
 
+        // ===== LOGOUT =====
         document.getElementById('logoutBtn').addEventListener('click', function(e) {
             e.preventDefault();
             localStorage.removeItem('token');
